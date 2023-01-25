@@ -94,6 +94,7 @@ pub async fn fetch_categories_and_subcategories(state: &Data<AppState>) -> Vec<N
 
         response.push(nested_category);
     }
+    println!("Returning list!");
     return response;
 }
 
@@ -200,7 +201,11 @@ pub async fn create_course(
             if err.to_string().contains("duplicate") {
                 return HttpResponse::BadRequest().json("Course already exists!");
             } else {
-                return HttpResponse::InternalServerError().json(err.to_string());
+                if err.to_string().contains("violates foreign key") {
+                    return HttpResponse::BadRequest().json("Error adding course. Please make sure that the all cities and subcategories provided really exists");
+                } else {
+                    return HttpResponse::InternalServerError().json("Error adding course.");
+                }
             }
         }
     }
@@ -215,7 +220,13 @@ pub async fn create_district(
 
     match query_create_district(&state, id, &body).await {
         Ok(location) => HttpResponse::Ok().json(location),
-        Err(err) => HttpResponse::InternalServerError().json(err.to_string()),
+        Err(err) => {
+            if (err.to_string().contains("duplicate")) {
+                return HttpResponse::BadRequest().json("The district already exists!");
+            } else {
+                return HttpResponse::InternalServerError().json("Error adding district!");
+            }
+        }
     }
 }
 
@@ -376,7 +387,14 @@ pub async fn create_booking(
     // Check if there are free seats remaining in Course
     let course_booking_info = match query_get_course_booking_info(&state, &body.course_id).await {
         Ok(course_booking_info) => course_booking_info,
-        Err(err) => return HttpResponse::BadRequest().json(err.to_string()),
+        Err(err) => {
+            if err.to_string().contains("no rows") {
+                return HttpResponse::BadRequest().json("Course does not exist!");
+            } else {
+                return HttpResponse::InternalServerError()
+                    .json("Error retrieving course information");
+            }
+        }
     };
 
     if course_booking_info.booking_count >= course_booking_info.max_seats as i64 {

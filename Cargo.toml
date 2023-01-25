@@ -13,3 +13,4 @@ serde_json = "1.0"
 sqlx = { version = "0.6.2", features = ["runtime-async-std-native-tls", "postgres", "uuid", "time", "chrono", "macros", "migrate"] }
 uuid = {version = "1.2.2", features = ["v4", "macro-diagnostics", "serde"]} 
 chrono = {version = "0.4.23", features = ["serde"]}
+load-dotenv = "0.1.2"

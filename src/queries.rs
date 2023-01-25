@@ -4,18 +4,15 @@ use crate::{
             CreateBookingRequest, CreateCategoryRequest, CreateCityRequest, CreateCourseRequest,
             CreateDistrictRequest, CreateSubcategoryRequest,
         },
-        db::{Category, Course, CourseBookingInfo, DistrictCities, Location, CategorySubcategories},
+        db::{
+            Category, CategorySubcategories, Course, CourseBookingInfo, DistrictCities, Location,
+        },
     },
     AppState,
 };
 use ::chrono::{DateTime, FixedOffset};
-use actix_web::{
-    web::{Data, Json},
-};
-use sqlx::{
-    self,
-    types::chrono::{Utc},
-};
+use actix_web::web::{Data, Json};
+use sqlx::{self, types::chrono::Utc};
 use uuid::Uuid;
 
 pub async fn query_get_course_booking_info(
@@ -45,7 +42,7 @@ pub async fn query_get_districts_cities_tree(
 pub async fn query_get_categories_subcategories_tree(
     state: &Data<AppState>,
 ) -> Result<Vec<CategorySubcategories>, sqlx::Error> {
-    let category_subcategories= sqlx::query_as("SELECT * FROM db.category_subcategories")
+    let category_subcategories = sqlx::query_as("SELECT * FROM db.category_subcategories")
         .fetch_all(&state.db)
         .await;
 
@@ -129,39 +126,43 @@ pub async fn query_add_course(
         return tx.rollback().await;
     }
 
-    let mut cities_added: u64 = 0;
+    if !&course_details.city_ids.is_empty() {
+        let mut cities_added: u64 = 0;
+        for city_id in &course_details.city_ids {
+            let result = sqlx::query(
+                "INSERT INTO db.course_location (course_id, location_id) VALUES ($1, $2)",
+            )
+            .bind(id)
+            .bind(city_id)
+            .execute(&mut tx)
+            .await?
+            .rows_affected();
+            cities_added += result
+        }
 
-    for city_id in &course_details.city_ids {
-        let result =
-            sqlx::query("INSERT INTO db.course_location (course_id, location_id) VALUES ($1, $2)")
-                .bind(id)
-                .bind(city_id)
-                .execute(&mut tx)
-                .await?
-                .rows_affected();
-        cities_added += result
+        if cities_added == 0 {
+            return tx.rollback().await;
+        }
     }
 
-    if cities_added == 0 {
-        return tx.rollback().await;
-    }
+    if !&course_details.subcategory_ids.is_empty() {
+        let mut subcategories_added: u64 = 0;
 
-    let mut subcategories_added: u64 = 0;
+        for subcategory_id in &course_details.subcategory_ids {
+            let result = sqlx::query(
+                "INSERT INTO db.course_categories (course_id, category_id) VALUES ($1, $2)",
+            )
+            .bind(id)
+            .bind(subcategory_id)
+            .execute(&mut tx)
+            .await?
+            .rows_affected();
+            subcategories_added += result
+        }
 
-    for subcategory_id in &course_details.subcategory_ids {
-        let result = sqlx::query(
-            "INSERT INTO db.course_categories (course_id, category_id) VALUES ($1, $2)",
-        )
-        .bind(id)
-        .bind(subcategory_id)
-        .execute(&mut tx)
-        .await?
-        .rows_affected();
-        subcategories_added += result
-    }
-
-    if subcategories_added == 0 {
-        return tx.rollback().await;
+        if subcategories_added == 0 {
+            return tx.rollback().await;
+        }
     }
 
     let result = tx.commit().await;

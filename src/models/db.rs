@@ -21,9 +21,10 @@ pub struct Course {
     pub price: i32,
     pub sessions: i32,
     pub visible: bool,
-    pub city_ids: Vec<Uuid>,
-    pub subcategory_ids: Vec<Uuid>,
-    pub booking_count: i64,
+    pub city_names: Vec<Option<String>>,
+    pub subcategory_names: Vec<Option<String>>
+    // pub subcategory_ids: Vec<Uuid>,
+    // pub booking_count: i64,
 }
 
 #[derive(sqlx::FromRow, Serialize)]

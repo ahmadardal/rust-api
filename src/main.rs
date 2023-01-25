@@ -19,6 +19,7 @@ use services::{
     get_categories_all, get_cities_by_district, get_courses_all, get_courses_by_id,
     get_district_all, get_subcategories_by_category_id, get_locations_all, get_courses_with_locations
 };
+use load_dotenv::load_dotenv;
 
 pub struct AppState {
     db: Pool<Postgres>,
@@ -26,8 +27,10 @@ pub struct AppState {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    dotenv().ok();
-    let database_url = std::env::var("DB_URL").expect("DATABASE_URL must be set");
+    // dotenv().ok();
+    load_dotenv!();
+    let database_url = env!("DB_URL");
+    //let database_url = std::env::var("DB_URL").expect("DATABASE_URL must be set");
     let pool = PgPoolOptions::new()
         .max_connections(5)
         .connect(&database_url)

@@ -81,14 +81,33 @@ ALTER TABLE "db"."course_location" ADD FOREIGN KEY ("location_id") REFERENCES "d
 ALTER TABLE "db"."course_categories" ADD FOREIGN KEY ("course_id") REFERENCES "db"."courses" ("id");
 
 
+-- CREATE VIEW db.full_course_info AS
+-- SELECT c.id, c.course_name, c.course_description, c.start_date, c.end_date, c.csn_entitled, c.max_seats, c.image, c.days, c.hours, c.price, c.sessions, c.visible, array_agg(DISTINCT cl.location_id) as city_ids, array_agg(DISTINCT cc.category_id) as subcategory_ids, (SELECT COUNT(*) FROM db.course_bookings WHERE course_id = c.id) as booking_count
+-- FROM db.courses c
+-- LEFT JOIN db.course_locations cl ON c.id = cl.course_id
+-- LEFT JOIN db.course_categories cc ON c.id = cc.course_id
+-- LEFT JOIN db.locations l ON cl.location_id = l.id AND l.parent_id IS NOT NULL
+-- LEFT JOIN db.categories cat ON cc.category_id = cat.id AND cat.parent_id IS NOT NULL
+-- GROUP BY c.id;
+
 CREATE VIEW db.full_course_info AS
-SELECT c.id, c.course_name, c.course_description, c.start_date, c.end_date, c.csn_entitled, c.max_seats, c.image, c.days, c.hours, c.price, c.sessions, c.visible, array_agg(DISTINCT cl.location_id) as city_ids, array_agg(DISTINCT cc.category_id) as subcategory_ids, (SELECT COUNT(*) FROM db.course_bookings WHERE course_id = c.id) as booking_count
+SELECT c.id, c.course_name, c.course_description, c.start_date, c.end_date, c.csn_entitled, c.max_seats, c.image, c.days, c.hours, c.price, c.sessions, c.visible, array_agg(DISTINCT l.name) as city_names, array_agg(DISTINCT cat.category_name) as subcategory_names
 FROM db.courses c
-LEFT JOIN db.course_locations cl ON c.id = cl.course_id
+LEFT JOIN db.course_location cl ON c.id = cl.course_id
 LEFT JOIN db.course_categories cc ON c.id = cc.course_id
 LEFT JOIN db.locations l ON cl.location_id = l.id AND l.parent_id IS NOT NULL
 LEFT JOIN db.categories cat ON cc.category_id = cat.id AND cat.parent_id IS NOT NULL
 GROUP BY c.id;
+
+-- CREATE VIEW db.full_course_info AS
+-- SELECT c.id, c.course_name, c.course_description, c.start_date, c.end_date, c.csn_entitled, c.max_seats, c.image, c.days, c.hours, c.price, c.sessions, c.visible, array_agg(DISTINCT l.name) as city_names, array_agg(DISTINCT cat.category_name) as subcategory_names
+-- FROM db.courses c
+-- INNER JOIN db.course_location cl ON c.id = cl.course_id
+-- INNER JOIN db.locations l ON cl.location_id = l.id AND l.parent_id IS NOT NULL
+-- LEFT JOIN db.course_categories cc ON c.id = cc.course_id
+-- LEFT JOIN db.categories cat ON cc.category_id = cat.id AND cat.parent_id IS NOT NULL
+-- GROUP BY c.id;
+
 
 CREATE VIEW db.course_booking_info AS
 SELECT  c.id as course_id, c.max_seats, COUNT(cb.id) as booking_count, array_agg(cb.personal_number) as personal_numbers
